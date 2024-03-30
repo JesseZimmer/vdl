@@ -7,11 +7,50 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bodgit/sevenzip"
 )
+
+func gameList(systemUrl string) {
+	//sysMap := make(map[int]map[string]string)
+	// Make an HTTP GET request to the webpage
+	res, err := http.Get(systemUrl)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		log.Fatalf("status code error: %d %s", res.StatusCode, res.Status)
+	}
+
+	// Load the HTML document
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Find the table with class "vault_table"
+	doc.Find("table.rounded").Each(func(b int, tableHtml *goquery.Selection) {
+		// Find all rows in the table
+		tableHtml.Find("tr").Each(func(j int, rowHtml *goquery.Selection) {
+			// Find all cells in the row
+			gameTableRow := rowHtml.Find("td").First()
+			// Find all <a> elements in the cell
+			gameAtrib := gameTableRow.Find("a").First()
+			// Get the text and href attribute of the <a> element
+
+			gameName := gameAtrib.Text()
+			gameHref, _ := gameAtrib.Attr("href")
+			vaultSplit := strings.Split(gameHref, "/")
+			vaultID := vaultSplit[len(vaultSplit)-1]
+
+			fmt.Printf("%s, %s\n", gameName, vaultID)
+		})
+	})
+}
 
 func extractArchive(archivePath string) error {
 
@@ -169,17 +208,76 @@ func downloadRom(filepath string, romUrl string, downloadUrl string) (err error)
 	return nil
 }
 
-func welcome() {
-	fmt.Println("Welcome to the (unofficial) Miyoo interface for Vimm's Lair!")
-}
-
 func main() {
-	welcome()
-	fmt.Print("Please input the vault ID of the rom you wish to download: ")
-	var inputId string
-	fmt.Scanln(&inputId)
+	//SystemList
+	sysList := map[int]map[string]string{
+		1:  {"Atari 2600": "https://vimm.net/vault/Atari2600"},
+		2:  {"Atari 5200": "https://vimm.net/vault/Atari5200"},
+		3:  {"Nintendo": "https://vimm.net/vault/NES"},
+		4:  {"Master System": "https://vimm.net/vault/SMS"},
+		5:  {"Atari 7800": "https://vimm.net/vault/Atari7800"},
+		6:  {"Genesis": "https://vimm.net/vault/Genesis"},
+		7:  {"Super Nintendo": "https://vimm.net/vault/SNES"},
+		8:  {"Sega 32X": "https://vimm.net/vault/32X"},
+		9:  {"Saturn": "https://vimm.net/vault/Saturn"},
+		10: {"PlayStation": "https://vimm.net/vault/PS1"},
+		11: {"Game Boy": "https://vimm.net/vault/GB"},
+		12: {"Lynx": "https://vimm.net/vault/Lynx"},
+		13: {"Game Gear": "https://vimm.net/vault/GG"},
+		14: {"Virtual Boy": "https://vimm.net/vault/VB"},
+		15: {"Game Boy Color": "https://vimm.net/vault/GBC"},
+		16: {"Game Boy Advance": "https://vimm.net/vault/GBA"},
+		17: {"Nintendo DS": "https://vimm.net/vault/DS"},
+	}
 
-	mediaId, romFolder := parseRom(inputId)
+	fmt.Printf("Unoffical Vimm.net Game Downloader\n\n")
+
+	//sort list
+	keys := make([]int, 0, len(sysList))
+	for key := range sysList {
+		keys = append(keys, key)
+	}
+
+	sort.Ints(keys)
+
+	i := 1
+	for _, key := range keys {
+		sysMap := sysList[key]
+		for sysName := range sysMap {
+			fmt.Printf("%d. %s\n", i, sysName)
+			i += 1
+		}
+	}
+
+	var sysSelection int
+	var letterSelection string
+	fmt.Print("\nSelect the system # : ")
+	fmt.Scanln(&sysSelection)
+
+	selectedSystem, found := sysList[sysSelection]
+	if !found {
+		fmt.Println("Invalid system selection")
+		return
+	}
+
+	var sysUrl string
+
+	for _, value := range selectedSystem {
+		sysUrl = value
+		break
+	}
+
+	fmt.Print("Enter A-Z to see a list of games: ")
+	fmt.Scanln(&letterSelection)
+
+	//fmt.Println(sysUrl + "/" + letterSelection)
+
+	gameList(sysUrl + "/" + letterSelection)
+	var vaultID string
+	fmt.Printf("Enter the vault ID from the game manu above: ")
+	fmt.Scanln(&vaultID)
+
+	mediaId, romFolder := parseRom(vaultID)
 	romFilepath := "/mnt/SDCARD/Roms/" + romFolder
-	downloadRom(romFilepath, "https://vimm.net/vault/"+inputId, "https://download3.vimm.net/download/?mediaId="+mediaId)
+	downloadRom(romFilepath, "https://vimm.net/vault/"+vaultID, "https://download3.vimm.net/download/?mediaId="+mediaId)
 }
