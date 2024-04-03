@@ -12,12 +12,21 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bodgit/sevenzip"
+	"github.com/eiannone/keyboard"
+	"github.com/inancgumus/screen"
 )
 
-func gameList(systemUrl string) {
-	//sysMap := make(map[int]map[string]string)
-	// Make an HTTP GET request to the webpage
-	res, err := http.Get(systemUrl)
+func gameList(systemUrl string) map[string]string {
+
+	gamesList := make(map[string]string)
+	c := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+	res, err := c.Get(systemUrl)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,9 +56,11 @@ func gameList(systemUrl string) {
 			vaultSplit := strings.Split(gameHref, "/")
 			vaultID := vaultSplit[len(vaultSplit)-1]
 
-			fmt.Printf("%s, %s\n", gameName, vaultID)
+			gamesList[gameName] = vaultID
+
 		})
 	})
+	return gamesList
 }
 
 func extractArchive(archivePath string) error {
@@ -229,7 +240,7 @@ func main() {
 		16: {"Game Boy Advance": "https://vimm.net/vault/GBA"},
 		17: {"Nintendo DS": "https://vimm.net/vault/DS"},
 	}
-
+	screen.Clear()
 	fmt.Printf("Unoffical Vimm.net Game Downloader\n\n")
 
 	//sort list
@@ -272,12 +283,80 @@ func main() {
 
 	//fmt.Println(sysUrl + "/" + letterSelection)
 
-	gameList(sysUrl + "/" + letterSelection)
-	var vaultID string
-	fmt.Printf("Enter the vault ID from the game manu above: ")
-	fmt.Scanln(&vaultID)
+	games := gameList(sysUrl + "/" + letterSelection)
 
-	mediaId, romFolder := parseRom(vaultID)
-	romFilepath := "/mnt/SDCARD/Roms/" + romFolder
-	downloadRom(romFilepath, "https://vimm.net/vault/"+vaultID, "https://download3.vimm.net/download/?mediaId="+mediaId)
+	gameKeys := make([]string, 0, len(games))
+	for key := range games {
+		gameKeys = append(gameKeys, key)
+	}
+	sort.Strings(gameKeys)
+
+	pageSize := 10
+	currentPage := 0
+	totalPages := len(gameKeys) / pageSize
+	if len(keys)%pageSize != 0 {
+		totalPages++
+	}
+
+	if err := keyboard.Open(); err != nil {
+		panic(err)
+	}
+	defer func() {
+		_ = keyboard.Close()
+	}()
+
+	err := keyboard.Open()
+	if err != nil {
+		panic(err)
+	}
+	defer keyboard.Close()
+
+	for {
+		screen.Clear()
+		printPage(games, gameKeys, currentPage, pageSize)
+		fmt.Printf("Page %d/%d - Use L2/R2 to navigate, Q/q to download game\n", currentPage+1, totalPages)
+
+		char, key, err := keyboard.GetSingleKey()
+		if err != nil {
+			panic(err)
+		}
+
+		if key == keyboard.KeyEsc || char == 'q' || char == 'Q' {
+			var vaultID string
+			fmt.Println()
+			fmt.Printf("Enter the vault ID from the game manu above: ")
+			fmt.Scanln(&vaultID)
+
+			mediaId, romFolder := parseRom(vaultID)
+			romFilepath := "/mnt/SDCARD/Roms/" + romFolder
+			downloadRom(romFilepath, "https://vimm.net/vault/"+vaultID, "https://download3.vimm.net/download/?mediaId="+mediaId)
+			os.Exit(1)
+
+		}
+
+		if key == keyboard.KeyArrowLeft {
+			if currentPage > 0 {
+				currentPage--
+			}
+		} else if key == keyboard.KeyArrowRight {
+			if currentPage < totalPages-1 {
+				currentPage++
+			}
+		}
+
+	}
+
+}
+
+func printPage(items map[string]string, keys []string, currentPage, pageSize int) {
+	start := currentPage * pageSize
+	end := start + pageSize
+	if end > len(keys) {
+		end = len(keys)
+	}
+
+	for _, key := range keys[start:end] {
+		fmt.Printf("%s: %s\n", key, items[key])
+	}
+	fmt.Println()
 }
