@@ -3,6 +3,8 @@
 
 ## Installation and Usage
 
+### This is out of date. Need to rewrite!!!
+
 **Demo video** - https://www.youtube.com/watch?v=XQ083ysIL6o
 
 Grab the vdl file from the releases and store it on your SD card somewhere. I put mine in the root directory, as that's what loads up first when you enter the Terminal on the console. This gives you easy access to the download utility with minimal button presses.
@@ -12,15 +14,6 @@ Navigate to the Terminal on your Miyoo (in the Apps folder, and can be installed
 ./vdl
 ```
 This assumes you've stored it in the root of your SD card. You can use the SELECT button to tab, and the START button as enter. So you can type "./v", then press SELECT to autocomplete, and then press START to run the application. 
-
-You will then get a prompt to enter the Vault ID of the rom you wish to download, you can locate the Vault ID here:
-
-![Screenshot showing how to identify the vault ID of your rom from the url of the rom hosting site.](https://imgkk.com/i/1iqq.png)
-
-In this case the ID is "3454". Type this into the downloader using the onscreen keyboard, and then press enter, or START. The rom will download, identify where it should be stored, and put it in the correct folder for you.
-
-### Tips
-If you've ran vdl before, it'll be saved in your terminal history, so when you re-launch terminal, you can just press the up key (on the on-screen keyboard) and it should cycle through the history of your commands. Wait until "./vdl" pops up, and then hit START. This will help you launch the util faster. 
 
 ## Console Compatibility
 | Console  | Compatible | Notes  |
@@ -56,6 +49,6 @@ It should spit you out an executable which you can then transfer to your Miyoo a
 ## Planned Features
 - Download progress bar
 - Better error handling around failed downloads
-- Rom browser to make solution self-contained
+- Rom browser to make solution self-contained - Done
 - Support for multi-disc downloads
 - Investigate faster unarchiving of PS1 games
