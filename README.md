@@ -3,9 +3,6 @@
 
 ## Installation and Usage
 
-### This is out of date. Need to rewrite!!!
-
-**Demo video** - https://www.youtube.com/watch?v=XQ083ysIL6o
 
 Grab the vdl file from the releases and store it on your SD card somewhere. I put mine in the root directory, as that's what loads up first when you enter the Terminal on the console. This gives you easy access to the download utility with minimal button presses.
 
